@@ -78,6 +78,8 @@ export const TIPOS_LICENCA = [
   "LAU – Licença Ambiental Única",
   "LAS – Licença Ambiental Simplificada",
   "LAC – Licença por Adesão e Compromisso",
+  "LAR – Licença Ambiental Rural",
+  "LAR – Licença de Atividade Rural",
   "AuA – Autorização Ambiental",
   "ASV – Autorização de Supressão de Vegetação",
   "Outorga de uso de recursos hídricos",

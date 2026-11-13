@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Nav } from "@/components/nav";
@@ -10,13 +11,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen md:flex">
       <aside className="border-b border-slate-200 bg-white md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col md:border-b-0 md:border-r">
-        <div className="flex items-center gap-2.5 px-5 py-4">
+        <Link href="/dashboard" title="Ir para o painel" className="flex items-center gap-2.5 px-5 py-4 transition-opacity hover:opacity-80">
           <Logo size={34} className="shrink-0" />
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{ctx.orgNome}</div>
             <div className="text-xs text-slate-500">Licenças Ambientais</div>
           </div>
-        </div>
+        </Link>
         <div className="px-3 pb-3 md:flex-1">
           <Nav />
         </div>

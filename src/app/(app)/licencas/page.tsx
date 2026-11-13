@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Plus } from "lucide-react";
+import { Download, FileSpreadsheet, Plus } from "lucide-react";
 import { Badge, Button, Card, Input, LinkButton, PageHeader, Select, Tabela, Td, Th, Vazio } from "@/components/ui";
 import { getContexto } from "@/lib/contexto";
 import { listarLicencas, siglaTipo } from "@/lib/dados";
@@ -44,6 +44,11 @@ export default async function LicencasPage({ searchParams }: PageProps<"/licenca
               <Download className="h-4 w-4" /> Exportar CSV
             </LinkButton>
             {ctx.podeEditar && (
+              <LinkButton href="/licencas/importar" variante="secundario">
+                <FileSpreadsheet className="h-4 w-4" /> Importar planilha
+              </LinkButton>
+            )}
+            {ctx.podeEditar && (
               <LinkButton href="/licencas/nova">
                 <Plus className="h-4 w-4" /> Nova licença
               </LinkButton>
@@ -73,9 +78,15 @@ export default async function LicencasPage({ searchParams }: PageProps<"/licenca
               <>
                 Nenhuma licença cadastrada.{" "}
                 {ctx.podeEditar && (
-                  <Link href="/licencas/nova" className="text-emerald-700 hover:underline">
-                    Cadastrar a primeira
-                  </Link>
+                  <>
+                    <Link href="/licencas/nova" className="text-emerald-700 hover:underline">
+                      Cadastrar a primeira
+                    </Link>{" "}
+                    ou{" "}
+                    <Link href="/licencas/importar" className="text-emerald-700 hover:underline">
+                      importar de uma planilha
+                    </Link>
+                  </>
                 )}
               </>
             ) : (

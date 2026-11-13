@@ -52,7 +52,7 @@ Itens priorizados para implementar (peça ao Claude Code: "implemente o item N d
 3. **Relatório PDF** por empresa/empreendimento (licenças + condicionantes + histórico), para enviar ao cliente/auditoria.
 4. **Evidências de campo com foto + GPS** — upload pelo celular (PWA) com coordenadas EXIF/geolocalização vinculadas à condicionante.
 5. **Mapa dos empreendimentos** (Leaflet + OpenStreetMap) colorido pela situação das licenças; importar polígono do CAR (shapefile/KML).
-6. **Importação de planilha** (Excel/CSV) de licenças e condicionantes existentes.
+6. **Importação de condicionantes por planilha** (licenças já importam em `/licencas/importar`, via `src/lib/importacao.ts`).
 7. **Vistorias e planos de ação** (não conformidades, responsáveis, prazos).
 8. **Troca de organização** para usuários que pertencem a mais de uma (hoje usa a primeira).
 9. **Portal do cliente**: papel `cliente` com acesso somente leitura às próprias empresas.
