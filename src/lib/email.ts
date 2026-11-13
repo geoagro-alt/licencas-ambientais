@@ -64,7 +64,10 @@ export function montarEmailAlertas(orgNome: string, itens: ItemSelecionado[]) {
 <html><body style="margin:0;background:#f8fafc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
   <div style="max-width:680px;margin:0 auto;padding:24px">
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px">
-      <div style="font-size:13px;color:#047857;font-weight:600;letter-spacing:.02em">ACOMPANHAMENTO DE LICENÇAS</div>
+      <table cellpadding="0" cellspacing="0"><tr>
+        <td style="padding-right:10px"><img src="${APP_URL()}/logo-email.png" width="36" height="36" alt="" style="display:block;border-radius:8px"></td>
+        <td style="font-size:13px;color:#047857;font-weight:600;letter-spacing:.02em">LICENÇAS AMBIENTAIS</td>
+      </tr></table>
       <h2 style="margin:6px 0 4px;font-size:20px;color:#0f172a">Prazos que precisam da sua atenção</h2>
       <p style="margin:0;color:#475569;font-size:14px">${esc(orgNome)} · ${partes.join(" · ")}</p>
       ${secao("Vencidos", vencidos)}
