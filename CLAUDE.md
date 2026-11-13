@@ -13,7 +13,7 @@ Usuários: consultoria ambiental brasileira (GeoAgro) e seus clientes do agro. *
 - **Região**: funções da Vercel em `gru1` (São Paulo, `vercel.json`) — mesma região do Supabase (`sa-east-1`). Não remova: com o servidor nos EUA cada clique fica ~0,5 s mais lento.
 - Autenticação no servidor usa `supabase.auth.getClaims()` (valida o JWT sem ida extra ao Auth). `loading.tsx` em `(app)` dá resposta imediata ao navegar.
 - **Vitest** para testes (`npm test`).
-- **IA**: `@anthropic-ai/sdk` (Claude) lê PDF/foto de licenças em `/licencas/ler`. Arquivo vai do navegador para o Storage (`<org>/ia/...`), o servidor baixa e envia em base64 com `tool_choice` forçado; resposta normalizada por `normalizarExtracao` (testada). Sem `ANTHROPIC_API_KEY` a tela mostra aviso.
+- **IA**: lê PDF/foto de licenças em `/licencas/ler`. Provedores em `src/lib/ia.ts`: **Gemini** (REST, `GEMINI_API_KEY`, plano grátis, `responseSchema` gerado por `paraSchemaGemini`, fallback para `gemini-3.5-flash-lite` em 404/429) ou **Claude** (`@anthropic-ai/sdk`, `ANTHROPIC_API_KEY`, `tool_choice` forçado). Gemini tem prioridade; `IA_PROVEDOR=claude` força o Claude. Arquivo vai do navegador para o Storage (`<org>/ia/...`), o servidor baixa e envia em base64; resposta normalizada por `normalizarExtracao` (testada). Sem chave a tela mostra aviso.
 - Na interface, a tabela `empresas` aparece como **Clientes** (rota `/clientes`; `/empresas` redireciona).
 
 ## Modelo de dados (supabase/migrations/0001_schema.sql)

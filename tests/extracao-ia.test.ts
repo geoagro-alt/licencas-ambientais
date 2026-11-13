@@ -54,3 +54,23 @@ describe("normalizarExtracao", () => {
     expect(Object.keys(FERRAMENTA.input_schema.properties).sort()).toEqual([...FERRAMENTA.input_schema.required].sort());
   });
 });
+
+import { lerJsonGemini, paraSchemaGemini } from "../src/lib/extracao-ia";
+
+describe("Gemini", () => {
+  it("converte o schema para o formato do Gemini", () => {
+    const g = paraSchemaGemini(FERRAMENTA.input_schema);
+    expect(g.type).toBe("OBJECT");
+    expect(g.properties!.numero).toMatchObject({ type: "STRING", nullable: true });
+    expect(g.properties!.validade_meses).toMatchObject({ type: "INTEGER", nullable: true });
+    expect(g.properties!.condicionantes.type).toBe("ARRAY");
+    expect(g.properties!.condicionantes.items!.properties!.tipo).toMatchObject({ type: "STRING", enum: ["unica", "periodica", "permanente"] });
+    expect(g.properties!.condicionantes.items!.properties!.descricao.nullable).toBeUndefined();
+    expect(g.required).toEqual(FERRAMENTA.input_schema.required);
+    expect(JSON.stringify(g)).not.toContain('"null"');
+  });
+  it("lê JSON mesmo cercado por crases", () => {
+    expect(lerJsonGemini('```json\n{"numero":"1"}\n```')).toEqual({ numero: "1" });
+    expect(() => lerJsonGemini("sem json")).toThrow();
+  });
+});

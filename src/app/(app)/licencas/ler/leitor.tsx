@@ -10,7 +10,6 @@ import { TIPOS_LICENCA, UFS, type Membro } from "@/lib/types";
 import { analisarDocumento, salvarLeitura, type DadosRevisados, type OpcaoEmpresa } from "./actions";
 
 type Etapa = "envio" | "lendo" | "revisao" | "salvando";
-const MAX_PDF = 30 * 1024 * 1024;
 
 /** Reduz fotos grandes (celular) para no máx. 2000 px em JPEG — a IA lê igual e o envio fica rápido. */
 async function prepararImagem(file: File): Promise<File> {
@@ -26,7 +25,7 @@ async function prepararImagem(file: File): Promise<File> {
   return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
 }
 
-export function LeitorIA({ orgId, membros, iaAtiva }: { orgId: string; membros: Membro[]; iaAtiva: boolean }) {
+export function LeitorIA({ orgId, membros, iaAtiva, maxBytes }: { orgId: string; membros: Membro[]; iaAtiva: boolean; maxBytes: number }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [etapa, setEtapa] = useState<Etapa>("envio");
@@ -39,7 +38,7 @@ export function LeitorIA({ orgId, membros, iaAtiva }: { orgId: string; membros: 
     setErro(null);
     try {
       if (!TIPOS_ACEITOS[original.type]) throw new Error("Envie um PDF ou uma foto (JPG, PNG, WEBP).");
-      if (original.type === "application/pdf" && original.size > MAX_PDF) throw new Error("PDF muito grande (máx. 30 MB).");
+      if (original.type === "application/pdf" && original.size > maxBytes) throw new Error(`PDF muito grande (máx. ${Math.round(maxBytes / 1024 / 1024)} MB). Envie só as páginas da licença.`);
       setEtapa("lendo");
       const file = await prepararImagem(original);
       const seguro = file.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_");
@@ -90,7 +89,7 @@ export function LeitorIA({ orgId, membros, iaAtiva }: { orgId: string; membros: 
         {!iaAtiva && (
           <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            A leitura por IA ainda não está ativada neste site (falta a chave ANTHROPIC_API_KEY na Vercel). Veja o README do projeto.
+            A leitura por IA ainda não está ativada neste site: falta cadastrar na Vercel a chave GEMINI_API_KEY (grátis, criada em aistudio.google.com) ou ANTHROPIC_API_KEY. Veja o README do projeto.
           </p>
         )}
         <Card>
@@ -116,7 +115,7 @@ export function LeitorIA({ orgId, membros, iaAtiva }: { orgId: string; membros: 
             ) : (
               <>
                 <div className="text-sm font-medium text-slate-800">Clique, arraste ou fotografe a licença</div>
-                <div className="text-xs text-slate-500">PDF da licença (até 30 MB) ou foto nítida de cada página · você revisa tudo antes de salvar</div>
+                <div className="text-xs text-slate-500">PDF da licença (até {Math.round(maxBytes / 1024 / 1024)} MB) ou foto nítida de cada página · você revisa tudo antes de salvar</div>
               </>
             )}
           </div>

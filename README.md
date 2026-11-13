@@ -16,7 +16,7 @@ Sistema web para **acompanhar licenças ambientais, outorgas, condicionantes e p
 | **Alertas por e-mail** | resumo diário às 7h com o que está vencendo · marcos configuráveis (padrão 120, 90, 60, 30, 15, 7, 1 e 0 dias) · itens vencidos são lembrados 1×/semana · nunca repete o mesmo aviso · e-mails extras (cliente, gerente da fazenda) · botão de teste |
 | **Equipe** | multiusuário com papéis (admin / editor / leitor) · convites por e-mail · cada organização só enxerga os próprios dados (Row Level Security) |
 | **Clientes** | clientes/empreendedores → empreendimentos (fazendas, unidades, obras) com município/UF, CAR e coordenadas |
-| **Leitura por IA** | envie o PDF ou a foto da licença: o Claude (Anthropic) extrai cliente, empreendimento, número, órgão, datas e **todas as condicionantes**; você revisa e salva |
+| **Leitura por IA** | envie o PDF ou a foto da licença: a IA (Gemini grátis ou Claude) extrai cliente, empreendimento, número, órgão, datas e **todas as condicionantes**; você revisa e salva |
 | **Importar planilha** | Excel/CSV de outros sistemas ou do próprio app; cria clientes e empreendimentos; reimportar não duplica |
 
 ## Por que esta arquitetura
@@ -59,10 +59,10 @@ Sistema web para **acompanhar licenças ambientais, outorgas, condicionantes e p
 3. **Deploy**. O cron em [`vercel.json`](vercel.json) roda todo dia às 10:00 UTC (07:00 em Brasília; no plano Hobby a Vercel pode disparar em qualquer minuto dentro dessa hora).
 4. Acesse o site → **Criar conta**. O primeiro usuário vira admin da organização. Convide a equipe em **Configurações**.
 
-### 4. Leitura por IA (opcional)
-1. Crie uma conta em [platform.claude.com](https://platform.claude.com), adicione créditos (pré-pago, a partir de US$ 5) e gere uma **API key**.
-2. Na Vercel → Settings → Environment Variables, adicione `ANTHROPIC_API_KEY` com a chave e faça **Redeploy**.
-3. Custo aproximado com o modelo padrão (Claude Sonnet 5.5): US$ 0,05 a 0,15 por licença lida. Para baratear, defina `ANTHROPIC_MODEL=claude-haiku-5-5`.
+### 4. Leitura por IA (opcional) — escolha uma
+- **Gemini (grátis):** em [aistudio.google.com/apikey](https://aistudio.google.com/apikey), entre com a conta Google e clique em *Create API key*. Na Vercel → Settings → Environment Variables, adicione `GEMINI_API_KEY` e faça **Redeploy**. Tem limite diário de leituras e, no plano gratuito, o Google pode usar os documentos enviados para treinar os modelos dele.
+- **Claude (pago):** em [platform.claude.com](https://platform.claude.com), adicione créditos (a partir de US$ 5) e gere uma API key → variável `ANTHROPIC_API_KEY`. Cerca de US$ 0,05–0,15 por licença; não usa os dados para treino.
+- Com as duas configuradas, usa o Gemini; para forçar o Claude, defina `IA_PROVEDOR=claude`.
 
 ### Rodar no computador
 ```bash

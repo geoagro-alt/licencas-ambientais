@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui";
 import { getContexto } from "@/lib/contexto";
 import { listarMembros } from "@/lib/dados";
-import { iaConfigurada } from "@/lib/ia";
+import { iaConfigurada, limiteBytes } from "@/lib/ia";
 import { LeitorIA } from "./leitor";
 
 // a leitura de um PDF longo pode levar até ~1 minuto
@@ -26,7 +26,7 @@ export default async function LerDocumentoPage() {
         titulo="Ler documento com IA"
         subtitulo="Envie o PDF ou a foto da licença: a IA preenche empresa, empreendimento, prazos e todas as condicionantes para você revisar."
       />
-      <LeitorIA orgId={ctx.orgId} membros={membros} iaAtiva={iaConfigurada()} />
+      <LeitorIA orgId={ctx.orgId} membros={membros} iaAtiva={iaConfigurada()} maxBytes={limiteBytes()} />
     </>
   );
 }

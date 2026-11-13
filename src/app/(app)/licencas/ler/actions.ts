@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { TIPOS_ACEITOS, type DadosExtraidos } from "@/lib/extracao-ia";
-import { extrairLicenca, iaConfigurada } from "@/lib/ia";
+import { extrairLicenca, iaConfigurada, limiteBytes } from "@/lib/ia";
 import { chaveNome } from "@/lib/importacao";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,7 +26,7 @@ export async function analisarDocumento(arquivo: { storage_path: string; mime: s
     const ctx = await getContexto();
     if (!ctx.podeEditar) return { ok: false, erro: "Seu usuário não tem permissão para cadastrar licenças." };
     if (!iaConfigurada()) {
-      return { ok: false, erro: "A leitura por IA ainda não foi ativada: falta configurar a variável ANTHROPIC_API_KEY na Vercel." };
+      return { ok: false, erro: "A leitura por IA ainda não foi ativada: falta configurar a variável GEMINI_API_KEY (grátis) ou ANTHROPIC_API_KEY na Vercel." };
     }
     if (!arquivo.storage_path.startsWith(`${ctx.orgId}/`)) return { ok: false, erro: "Arquivo inválido." };
     const tipo = TIPOS_ACEITOS[arquivo.mime];
@@ -35,6 +35,9 @@ export async function analisarDocumento(arquivo: { storage_path: string; mime: s
     const supabase = await createClient();
     const { data: blob, error } = await supabase.storage.from("documentos").download(arquivo.storage_path);
     if (error || !blob) return { ok: false, erro: `Não consegui abrir o arquivo: ${error?.message ?? "desconhecido"}` };
+    if (blob.size > limiteBytes()) {
+      return { ok: false, erro: `Arquivo muito grande para a leitura por IA (máx. ${Math.round(limiteBytes() / 1024 / 1024)} MB). Envie só as páginas da licença.` };
+    }
     const base64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
 
     const [dados, { data: empresasDb }] = await Promise.all([
@@ -56,8 +59,8 @@ export async function analisarDocumento(arquivo: { storage_path: string; mime: s
   } catch (e) {
     const msg = (e as { message?: string }).message ?? String(e);
     if (/credit balance|billing/i.test(msg)) return { ok: false, erro: "A conta da Anthropic está sem créditos. Adicione créditos em platform.claude.com." };
-    if (/authentication|api[-_ ]?key|401/i.test(msg)) return { ok: false, erro: "A chave ANTHROPIC_API_KEY é inválida. Confira a configuração na Vercel." };
-    return { ok: false, erro: `Falha na leitura: ${msg}` };
+    if (/authentication_error|invalid x-api-key/i.test(msg)) return { ok: false, erro: "A chave ANTHROPIC_API_KEY é inválida. Confira a configuração na Vercel." };
+    return { ok: false, erro: msg.startsWith("A ") || msg.startsWith("Limite") || msg.startsWith("Gemini") ? msg : `Falha na leitura: ${msg}` };
   }
 }
 

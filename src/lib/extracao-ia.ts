@@ -186,3 +186,34 @@ export const TIPOS_ACEITOS: Record<string, "pdf" | "imagem"> = {
   "image/webp": "imagem",
   "image/gif": "imagem",
 };
+
+// ------------------------------------------------------------------ Gemini
+
+type SchemaJson = { type?: string | string[]; properties?: Record<string, SchemaJson>; items?: SchemaJson; required?: string[]; enum?: string[]; description?: string };
+export type SchemaGemini = { type: string; nullable?: boolean; properties?: Record<string, SchemaGemini>; items?: SchemaGemini; required?: string[]; enum?: string[]; description?: string; propertyOrdering?: string[] };
+
+/** Converte o JSON Schema da ferramenta para o formato de "responseSchema" do Gemini (OpenAPI: nullable em vez de tipo ["x","null"]). */
+export function paraSchemaGemini(s: SchemaJson): SchemaGemini {
+  const tipos = Array.isArray(s.type) ? s.type : [s.type ?? "string"];
+  const principal = tipos.find((t) => t !== "null") ?? "string";
+  const out: SchemaGemini = { type: principal.toUpperCase() };
+  if (tipos.includes("null")) out.nullable = true;
+  if (s.description) out.description = s.description;
+  if (s.enum) out.enum = s.enum;
+  if (s.properties) {
+    out.properties = Object.fromEntries(Object.entries(s.properties).map(([k, v]) => [k, paraSchemaGemini(v)]));
+    out.propertyOrdering = Object.keys(s.properties);
+  }
+  if (s.required) out.required = s.required;
+  if (s.items) out.items = paraSchemaGemini(s.items);
+  return out;
+}
+
+/** Extrai o JSON da resposta do Gemini (às vezes vem cercado por ```json). */
+export function lerJsonGemini(texto: string): Record<string, unknown> {
+  const limpo = texto.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  const ini = limpo.indexOf("{");
+  const fim = limpo.lastIndexOf("}");
+  if (ini < 0 || fim < ini) throw new Error("Resposta da IA sem JSON.");
+  return JSON.parse(limpo.slice(ini, fim + 1));
+}
