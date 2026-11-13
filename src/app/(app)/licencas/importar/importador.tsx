@@ -170,7 +170,7 @@ export function Importador() {
                 <thead>
                   <tr>
                     <Th>Linha</Th>
-                    <Th>Empresa / empreendimento</Th>
+                    <Th>Empreendimento</Th>
                     <Th>Tipo</Th>
                     <Th>Número</Th>
                     <Th>Órgão</Th>
@@ -185,8 +185,7 @@ export function Importador() {
                       <tr key={l.linha}>
                         <Td className="text-xs text-slate-400">{l.linha}</Td>
                         <Td>
-                          <div>{l.empresa}</div>
-                          {l.empreendimento !== l.empresa && <div className="text-xs text-slate-500">{l.empreendimento}</div>}
+                          {l.empreendimento}
                         </Td>
                         <Td className="text-xs">{l.tipo}</Td>
                         <Td>{l.numero ?? "—"}</Td>

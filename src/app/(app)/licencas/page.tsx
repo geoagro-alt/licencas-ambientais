@@ -98,7 +98,7 @@ export default async function LicencasPage({ searchParams }: PageProps<"/licenca
             <thead>
               <tr>
                 <Th>Licença</Th>
-                <Th>Empresa / empreendimento</Th>
+                <Th>Empreendimento</Th>
                 <Th>Órgão</Th>
                 <Th>Validade</Th>
                 <Th>Protocolar renovação até</Th>
@@ -116,8 +116,7 @@ export default async function LicencasPage({ searchParams }: PageProps<"/licenca
                     {l.processo && <div className="text-xs text-slate-500">Proc. {l.processo}</div>}
                   </Td>
                   <Td>
-                    <div>{l.empreendimentos?.empresas?.razao_social}</div>
-                    <div className="text-xs text-slate-500">{l.empreendimentos?.nome}</div>
+                    {l.empreendimentos?.nome ?? "—"}
                   </Td>
                   <Td>{l.orgao ?? "—"}</Td>
                   <Td>
