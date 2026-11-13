@@ -32,7 +32,7 @@ Sistema web para **acompanhar licenças ambientais, outorgas, condicionantes e p
 
 ### 1. Supabase (banco + login)
 1. Crie uma conta em [supabase.com](https://supabase.com) → **New project** (região *South America (São Paulo)*).
-2. Abra **SQL Editor → New query**, cole todo o conteúdo de [`supabase/migrations/0001_schema.sql`](supabase/migrations/0001_schema.sql) e clique **Run**.
+2. Abra **SQL Editor → New query** e rode, em ordem, os arquivos de [`supabase/migrations/`](supabase/migrations/) (`0001_schema.sql`, depois `0002_endurecer_funcoes.sql`).
 3. Em **Authentication → URL Configuration**, coloque a URL do site (ex.: `https://seu-app.vercel.app`) em *Site URL* e adicione `https://seu-app.vercel.app/auth/callback` em *Redirect URLs*.
 4. Em **Project Settings → API**, copie `Project URL`, a chave `anon` e a chave `service_role`.
 
