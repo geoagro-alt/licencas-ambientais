@@ -1,0 +1,15 @@
+# Agendador alternativo para os alertas — use se NÃO hospedar na Vercel
+# (ou como reserva). Cadastre os secrets APP_URL e CRON_SECRET no repositório
+# e descomente o bloco "schedule".
+name: Alertas (agendador alternativo)
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "0 10 * * *"   # 07:00 em Brasília
+
+jobs:
+  disparar:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/alertas"
