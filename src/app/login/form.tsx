@@ -20,17 +20,14 @@ export function FormLogin({ next, erroInicial }: { next: string; erroInicial?: s
             <Field label="Seu nome">
               <Input name="nome" required autoComplete="name" />
             </Field>
-            <Field label="Nome da empresa / consultoria" dica="Cria a sua organização. Quem for convidado depois entra direto nela.">
-              <Input name="organizacao" placeholder="Ex.: GeoAgro Consultoria" />
-            </Field>
           </>
         )}
-        <Field label="E-mail">
+        <Field label="E-mail" dica={modo === "cadastrar" ? "O cadastro é por convite: use o e-mail que o administrador convidou." : undefined}>
           <Input name="email" type="email" required autoComplete="email" />
         </Field>
         {modo !== "recuperar" && (
           <Field label="Senha">
-            <Input name="senha" type="password" required minLength={6} autoComplete={modo === "entrar" ? "current-password" : "new-password"} />
+            <Input name="senha" type="password" required minLength={modo === "cadastrar" ? 8 : undefined} autoComplete={modo === "entrar" ? "current-password" : "new-password"} />
           </Field>
         )}
 

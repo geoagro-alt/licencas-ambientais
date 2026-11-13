@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { caminhosDeLicencas, removerArquivos } from "@/lib/arquivos";
 import { getContexto } from "@/lib/contexto";
-import { avancarPrazo, hojeISO } from "@/lib/prazos";
+import { hojeISO } from "@/lib/prazos";
 import { createClient } from "@/lib/supabase/server";
 
 const txt = (f: FormData, k: string) => {
@@ -63,10 +64,10 @@ export async function salvarLicenca(form: FormData) {
 export async function excluirLicenca(form: FormData) {
   const supabase = await createClient();
   const id = String(form.get("id"));
-  const { data: docs } = await supabase.from("documentos").select("storage_path").eq("licenca_id", id);
-  if (docs?.length) await supabase.storage.from("documentos").remove(docs.map((d) => d.storage_path));
+  const caminhos = await caminhosDeLicencas(supabase, [id]);
   const { error } = await supabase.from("licencas").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  await removerArquivos(supabase, caminhos); // só depois que o banco confirmou
   revalidarTudo();
   redirect("/licencas");
 }
@@ -164,37 +165,20 @@ export async function mudarSituacaoCondicionante(form: FormData) {
  * Únicas: ficam "cumpridas". Retorna o id do cumprimento (para anexar comprovantes).
  */
 export async function cumprirCondicionante(form: FormData) {
-  const ctx = await getContexto();
   const supabase = await createClient();
   const id = String(form.get("id"));
-  const { data: c, error: e1 } = await supabase
-    .from("condicionantes")
-    .select("id, licenca_id, tipo, prazo, periodicidade_meses")
-    .eq("id", id)
-    .single();
-  if (e1 || !c) throw new Error(e1?.message ?? "Condicionante não encontrada");
-
-  const { error: e2 } = await supabase.from("cumprimentos").insert({
-    org_id: ctx.orgId,
-    condicionante_id: id,
-    prazo_referente: c.prazo,
-    data_cumprimento: txt(form, "data_cumprimento") ?? hojeISO(),
-    protocolo: txt(form, "protocolo"),
-    observacao: txt(form, "observacao"),
-    user_id: ctx.userId,
+  // Tudo numa transação só no banco (função cumprir_condicionante, migração 0005): trava a linha,
+  // grava o cumprimento e avança o prazo. Um segundo clique encontra o prazo já avançado e é recusado.
+  const { data: licencaId, error } = await supabase.rpc("cumprir_condicionante", {
+    p_id: id,
+    p_prazo_esperado: txt(form, "prazo_esperado"),
+    p_data: txt(form, "data_cumprimento") ?? hojeISO(),
+    p_protocolo: txt(form, "protocolo"),
+    p_observacao: txt(form, "observacao"),
   });
-  if (e2) throw new Error(e2.message);
+  if (error) throw new Error(error.message);
 
-  const update =
-    c.tipo === "periodica" && c.prazo && c.periodicidade_meses
-      ? { prazo: avancarPrazo(c.prazo, c.periodicidade_meses), situacao: "pendente" as const }
-      : c.tipo === "permanente"
-        ? { situacao: "pendente" as const }
-        : { situacao: "cumprida" as const };
-  const { error: e3 } = await supabase.from("condicionantes").update(update).eq("id", id);
-  if (e3) throw new Error(e3.message);
-
-  revalidarTudo(c.licenca_id);
+  revalidarTudo(licencaId as string);
 }
 
 // ---------------------------------------------------------------- Documentos

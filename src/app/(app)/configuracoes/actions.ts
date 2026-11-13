@@ -1,12 +1,18 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { enviarEmail } from "@/lib/email";
 import { executarAlertas } from "@/lib/executar-alertas";
+import { EMAIL_VALIDO, escHtml, SENHA_MINIMA } from "@/lib/seguranca";
 import { createClient } from "@/lib/supabase/server";
+import type { Papel } from "@/lib/types";
 
 export type Estado = { ok?: string; erro?: string } | undefined;
+
+const MAX_CONVITES_PENDENTES = 50;
+const ehPapel = (p: string): p is Papel => p === "admin" || p === "editor" || p === "leitor";
 
 async function exigirAdmin() {
   const ctx = await getContexto();
@@ -31,7 +37,8 @@ export async function salvarAlertas(_: Estado, form: FormData): Promise<Estado> 
     const emails = String(form.get("emails_extras") ?? "")
       .split(/[,;\s]+/)
       .map((x) => x.trim().toLowerCase())
-      .filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+      .filter((x) => EMAIL_VALIDO.test(x))
+      .slice(0, 20);
     const supabase = await createClient();
     const { error } = await supabase
       .from("alertas_config")
@@ -88,9 +95,15 @@ export async function convidar(_: Estado, form: FormData): Promise<Estado> {
   try {
     const ctx = await exigirAdmin();
     const email = String(form.get("email") ?? "").trim().toLowerCase();
-    const papel = String(form.get("papel") ?? "editor") as "admin" | "editor" | "leitor";
-    if (!email) return { erro: "Informe o e-mail." };
+    const papel = String(form.get("papel") ?? "editor");
+    if (!EMAIL_VALIDO.test(email)) return { erro: "Informe um e-mail válido." };
+    if (!ehPapel(papel)) return { erro: "Papel inválido." };
     const supabase = await createClient();
+    // freio contra uso do convite para disparar e-mails em massa
+    const { count } = await supabase.from("convites").select("id", { count: "exact", head: true }).eq("org_id", ctx.orgId);
+    if ((count ?? 0) >= MAX_CONVITES_PENDENTES) {
+      return { erro: `Há ${count} convites pendentes. Cancele os que não forem mais necessários antes de convidar outras pessoas.` };
+    }
     const { error } = await supabase.from("convites").upsert({ org_id: ctx.orgId, email, papel }, { onConflict: "org_id,email" });
     if (error) return { erro: error.message };
 
@@ -100,8 +113,9 @@ export async function convidar(_: Estado, form: FormData): Promise<Estado> {
         await enviarEmail(
           email,
           `Convite para acompanhar licenças — ${ctx.orgNome}`,
-          `<p>Você foi convidado(a) para a organização <b>${ctx.orgNome}</b> no sistema de acompanhamento de licenças ambientais.</p>
-           <p><a href="${appUrl}/login">Crie sua conta</a> usando este mesmo e-mail (${email}) para entrar automaticamente.</p>`,
+          // nome da organização e e-mail são digitados por usuários: sempre escapar no HTML
+          `<p>Você foi convidado(a) para a organização <b>${escHtml(ctx.orgNome)}</b> no sistema de acompanhamento de licenças ambientais.</p>
+           <p><a href="${appUrl}/login">Crie sua conta</a> (ou entre, se já tiver uma) usando este mesmo e-mail (${escHtml(email)}) para entrar automaticamente.</p>`,
           `Você foi convidado(a) para ${ctx.orgNome}. Crie sua conta em ${appUrl}/login usando o e-mail ${email}.`,
         );
       } catch {
@@ -126,21 +140,35 @@ export async function alterarMembro(form: FormData) {
   const ctx = await exigirAdmin();
   const supabase = await createClient();
   const userId = String(form.get("user_id"));
+  // ninguém altera ou remove a si mesmo: evita organização sem admin (o banco também recusa)
+  if (userId === ctx.userId) throw new Error("Você não pode alterar o seu próprio acesso.");
   if (form.get("remover") === "1") {
-    await supabase.from("membros").delete().eq("org_id", ctx.orgId).eq("user_id", userId);
+    const { error } = await supabase.from("membros").delete().eq("org_id", ctx.orgId).eq("user_id", userId);
+    if (error) throw new Error(error.message);
   } else {
-    await supabase
-      .from("membros")
-      .update({ papel: String(form.get("papel")) as "editor" })
-      .eq("org_id", ctx.orgId)
-      .eq("user_id", userId);
+    const papel = String(form.get("papel"));
+    if (!ehPapel(papel)) throw new Error("Papel inválido.");
+    const { error } = await supabase.from("membros").update({ papel }).eq("org_id", ctx.orgId).eq("user_id", userId);
+    if (error) throw new Error(error.message);
   }
+  revalidatePath("/configuracoes");
+}
+
+/** Troca o endereço secreto da agenda (.ics). O link antigo para de funcionar na hora. */
+export async function regenerarTokenAgenda() {
+  const ctx = await exigirAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizacoes")
+    .update({ ics_token: randomBytes(18).toString("hex") })
+    .eq("id", ctx.orgId);
+  if (error) throw new Error(error.message);
   revalidatePath("/configuracoes");
 }
 
 export async function novaSenha(_: Estado, form: FormData): Promise<Estado> {
   const senha = String(form.get("senha") ?? "");
-  if (senha.length < 6) return { erro: "A senha precisa ter pelo menos 6 caracteres." };
+  if (senha.length < SENHA_MINIMA) return { erro: `A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres.` };
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: senha });
   return error ? { erro: error.message } : { ok: "Senha alterada." };

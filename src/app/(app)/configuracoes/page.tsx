@@ -4,7 +4,7 @@ import { BotaoConfirmar } from "@/components/confirmar";
 import { getContexto } from "@/lib/contexto";
 import { listarMembros } from "@/lib/dados";
 import { createClient } from "@/lib/supabase/server";
-import { alterarMembro, cancelarConvite, minhaPreferencia, salvarOrganizacao } from "./actions";
+import { alterarMembro, cancelarConvite, minhaPreferencia, regenerarTokenAgenda, salvarOrganizacao } from "./actions";
 import { BotaoTeste, FormAlertas, FormConvite, FormSenha } from "./forms";
 
 const PAPEIS = { admin: "Admin", editor: "Editor", leitor: "Leitor" };
@@ -88,6 +88,16 @@ export default async function ConfiguracoesPage() {
             </p>
             <Input readOnly value={icsUrl} className="font-mono text-xs" />
             <p className="mt-2 text-xs text-slate-500">Quem tiver o link vê os prazos — não compartilhe publicamente.</p>
+            {admin && (
+              <form action={regenerarTokenAgenda} className="mt-3">
+                <BotaoConfirmar
+                  mensagem="Gerar um novo link? O link atual para de funcionar e precisará ser assinado de novo em cada agenda."
+                  className="text-xs text-slate-600 underline hover:text-slate-900"
+                >
+                  O link vazou? Gerar um novo
+                </BotaoConfirmar>
+              </form>
+            )}
           </Card>
 
           {admin && (

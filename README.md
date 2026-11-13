@@ -34,7 +34,7 @@ Sistema web para **acompanhar licenças ambientais, outorgas, condicionantes e p
 
 ### 1. Supabase (banco + login)
 1. Crie uma conta em [supabase.com](https://supabase.com) → **New project** (região *South America (São Paulo)*).
-2. Abra **SQL Editor → New query** e rode, em ordem, os arquivos de [`supabase/migrations/`](supabase/migrations/) (`0001_schema.sql`, depois `0002_endurecer_funcoes.sql`).
+2. Abra **SQL Editor → New query** e rode, em ordem, os arquivos de [`supabase/migrations/`](supabase/migrations/) (`0001_schema.sql`, `0002_…`, e assim por diante até o último número).
 3. Em **Authentication → URL Configuration**, coloque a URL do site (ex.: `https://seu-app.vercel.app`) em *Site URL* e adicione `https://seu-app.vercel.app/auth/callback` em *Redirect URLs*.
 4. Em **Project Settings → API**, copie `Project URL`, a chave `anon` e a chave `service_role`.
 
@@ -57,7 +57,7 @@ Sistema web para **acompanhar licenças ambientais, outorgas, condicionantes e p
 | `CRON_SECRET` | qualquer texto longo e aleatório |
 
 3. **Deploy**. O cron em [`vercel.json`](vercel.json) roda todo dia às 10:00 UTC (07:00 em Brasília; no plano Hobby a Vercel pode disparar em qualquer minuto dentro dessa hora).
-4. Acesse o site → **Criar conta**. O primeiro usuário vira admin da organização. Convide a equipe em **Configurações**.
+4. Acesse o site → **Criar conta**. O primeiro usuário vira admin da organização. Convide a equipe em **Configurações** — depois do primeiro usuário, o cadastro é **apenas por convite** (quem não foi convidado não consegue criar conta).
 
 ### 4. Leitura por IA (opcional) — escolha uma
 - **Gemini (grátis):** em [aistudio.google.com/apikey](https://aistudio.google.com/apikey), entre com a conta Google e clique em *Create API key*. Na Vercel → Settings → Environment Variables, adicione `GEMINI_API_KEY` e faça **Redeploy**. Tem limite diário de leituras e, no plano gratuito, o Google pode usar os documentos enviados para treinar os modelos dele.

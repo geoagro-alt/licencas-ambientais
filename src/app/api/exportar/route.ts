@@ -1,12 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getContexto } from "@/lib/contexto";
 import { listarCondicionantes, listarLicencas, listarMembros, nomeMembro } from "@/lib/dados";
+import { celulaCsv } from "@/lib/seguranca";
 import { fmtData, limiteRenovacao, statusCondicionante, statusLicenca } from "@/lib/prazos";
 
 /** Relatório em CSV (abre direto no Excel — separador ";" e BOM UTF-8). */
 export async function GET(req: NextRequest) {
   const ctx = await getContexto();
-  const tipo = req.nextUrl.searchParams.get("tipo") ?? "licencas";
+  // valor fixo: `tipo` vai para o nome do arquivo no cabeçalho Content-Disposition
+  const tipo = req.nextUrl.searchParams.get("tipo") === "condicionantes" ? "condicionantes" : "licencas";
   const membros = await listarMembros(ctx.orgId);
   let linhas: (string | number | null | undefined)[][] = [];
 
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
   const csv =
     "﻿" +
     linhas
-      .map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""').replace(/\r?\n/g, " ")}"`).join(";"))
+      .map((r) => r.map(celulaCsv).join(";"))
       .join("\r\n");
 
   return new NextResponse(csv, {

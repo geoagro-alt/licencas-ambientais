@@ -36,6 +36,17 @@ alertas_enviados  (entidade, entidade_id, data_referencia, marco_dias) UNIQUE �
 - Datas são `date` (sem hora) no formato ISO `yyyy-MM-dd`; "hoje" é sempre `hojeISO()` (fuso America/Sao_Paulo). Formatação com `fmtData`/`fmtDias` de `@/lib/prazos`.
 - Regras de negócio puras (sem I/O) ficam em `src/lib/*.ts` e devem ter teste em `tests/`.
 
+## Segurança e limites (não remova sem entender)
+- **Limite de 1.000 linhas**: a API do Supabase corta toda consulta em 1.000 linhas. Listas que podem crescer (licenças, condicionantes, `alertas_enviados`, importação) usam `buscarTudo` de `@/lib/paginacao` com `.order("id")` no fim. `.limit(N)` acima de 1.000 não funciona.
+- **Cadastro só por convite** (migração 0006): o gatilho `handle_new_user` recusa e-mail sem convite, exceto na instalação nova (nenhuma organização). O convidado entra na organização no primeiro login, via RPC `aceitar_convite()` chamada em `getContexto()`.
+- **`membros`**: o gatilho `proteger_membros` (0004) impede o usuário de mudar o próprio `papel`/`org_id`. Não crie policy de update sem `with check`.
+- **Usuário sem organização** vai para `/sem-organizacao` — nunca redirecione para `/login` (o proxy devolve ao painel e vira laço).
+- **Redirecionamento pós-login**: sempre `destinoSeguro()` de `@/lib/seguranca`. Texto de usuário em HTML de e-mail: sempre `escHtml()`. CSV: `celulaCsv()`.
+- **Cumprimento de condicionante**: RPC `cumprir_condicionante` (0005), atômica e protegida contra clique duplo. Não volte a fazer em 3 chamadas separadas.
+- **Excluir cliente/empreendimento/licença**: colete os caminhos com `@/lib/arquivos` antes, exclua no banco e só então remova do Storage.
+- **IA**: cada leitura grava em `ia_leituras`; limite por organização em 24 h = `IA_LIMITE_DIARIO` (padrão 30).
+- Cabeçalhos de segurança ficam em `next.config.ts`.
+
 ## Regras de negócio importantes
 - **Renovação**: prazo-limite = validade − `antecedencia_renovacao_dias` (padrão 120, LC 140/2011 art. 14 §4º). Protocolada no prazo → situação `em_renovacao` (validade prorrogada até manifestação do órgão).
 - **Condicionante periódica**: ao registrar cumprimento, `prazo += periodicidade_meses` e volta a `pendente`. Única → `cumprida`. Permanente → continua `pendente`.

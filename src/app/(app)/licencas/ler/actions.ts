@@ -18,7 +18,12 @@ export type ResultadoAnalise =
   | { ok: true; dados: DadosExtraidos; empresas: OpcaoEmpresa[]; empresaId: string; empreendimentoId: string }
   | { ok: false; erro: string };
 
-const soDigitos = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+const limiteDiarioIA = () => {
+  const n = parseInt(process.env.IA_LIMITE_DIARIO ?? "", 10);
+  return Number.isFinite(n) && n > 0 ? n : 30;
+};
+
+const soDigitos =(s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
 
 /** Lê o arquivo (já enviado ao Storage pelo navegador) com a IA e sugere empresa/empreendimento existentes. */
 export async function analisarDocumento(arquivo: { storage_path: string; mime: string }): Promise<ResultadoAnalise> {
@@ -33,9 +38,22 @@ export async function analisarDocumento(arquivo: { storage_path: string; mime: s
     if (!tipo) return { ok: false, erro: "Formato não suportado. Envie PDF, JPG, PNG ou WEBP." };
 
     const supabase = await createClient();
+
+    // Limite diário por organização: cada leitura custa cota/créditos da chave de IA.
+    const limite = limiteDiarioIA();
+    const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabase.from("ia_leituras").select("id", { count: "exact", head: true }).eq("org_id", ctx.orgId).gte("created_at", desde);
+    if ((count ?? 0) >= limite) {
+      await supabase.storage.from("documentos").remove([arquivo.storage_path]);
+      return { ok: false, erro: `Limite de ${limite} leituras por IA em 24 horas atingido. Tente de novo mais tarde ou cadastre a licença manualmente.` };
+    }
+    const { error: eUso } = await supabase.from("ia_leituras").insert({ org_id: ctx.orgId, user_id: ctx.userId });
+    if (eUso) return { ok: false, erro: `Não consegui registrar o uso da IA: ${eUso.message}` };
+
     const { data: blob, error } = await supabase.storage.from("documentos").download(arquivo.storage_path);
     if (error || !blob) return { ok: false, erro: `Não consegui abrir o arquivo: ${error?.message ?? "desconhecido"}` };
     if (blob.size > limiteBytes()) {
+      await supabase.storage.from("documentos").remove([arquivo.storage_path]);
       return { ok: false, erro: `Arquivo muito grande para a leitura por IA (máx. ${Math.round(limiteBytes() / 1024 / 1024)} MB). Envie só as páginas da licença.` };
     }
     const base64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
@@ -57,11 +75,26 @@ export async function analisarDocumento(arquivo: { storage_path: string; mime: s
 
     return { ok: true, dados, empresas, empresaId: empresa?.id ?? "", empreendimentoId: empreendimento?.id ?? "" };
   } catch (e) {
+    // leitura falhou: o arquivo enviado não será usado — não deixa sobra no Storage
+    await descartarArquivoLido(arquivo.storage_path).catch(() => {});
     const msg = (e as { message?: string }).message ?? String(e);
     if (/credit balance|billing/i.test(msg)) return { ok: false, erro: "A conta da Anthropic está sem créditos. Adicione créditos em platform.claude.com." };
     if (/authentication_error|invalid x-api-key/i.test(msg)) return { ok: false, erro: "A chave ANTHROPIC_API_KEY é inválida. Confira a configuração na Vercel." };
     return { ok: false, erro: msg.startsWith("A ") || msg.startsWith("Limite") || msg.startsWith("Gemini") ? msg : `Falha na leitura: ${msg}` };
   }
+}
+
+/**
+ * Apaga do Storage um arquivo enviado para leitura que não virou licença (usuário desistiu ou a leitura falhou).
+ * Só aceita a pasta temporária `<org>/ia/` e nunca apaga arquivo já registrado em `documentos`.
+ */
+export async function descartarArquivoLido(storagePath: string): Promise<void> {
+  const ctx = await getContexto();
+  if (!ctx.podeEditar || !storagePath.startsWith(`${ctx.orgId}/ia/`) || storagePath.includes("..")) return;
+  const supabase = await createClient();
+  const { data: registrado } = await supabase.from("documentos").select("id").eq("storage_path", storagePath).maybeSingle();
+  if (registrado) return;
+  await supabase.storage.from("documentos").remove([storagePath]);
 }
 
 export interface DadosRevisados extends DadosExtraidos {

@@ -11,13 +11,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen md:flex">
       <aside className="border-b border-slate-200 bg-white md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col md:border-b-0 md:border-r">
-        <Link href="/dashboard" title="Ir para o painel" className="flex items-center gap-2.5 px-5 py-4 transition-opacity hover:opacity-80">
-          <Logo size={34} className="shrink-0" />
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{ctx.orgNome}</div>
-            <div className="text-xs text-slate-500">Licenças Ambientais</div>
-          </div>
-        </Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/dashboard" title="Ir para o painel" className="flex min-w-0 items-center gap-2.5 px-5 py-4 transition-opacity hover:opacity-80">
+            <Logo size={34} className="shrink-0" />
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold">{ctx.orgNome}</div>
+              <div className="text-xs text-slate-500">Licenças Ambientais</div>
+            </div>
+          </Link>
+          {/* no celular a barra lateral vira topo: o "Sair" fica aqui (no desktop ele está no rodapé da barra) */}
+          <form action={sair} className="pr-4 md:hidden">
+            <button className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900" title={ctx.email}>
+              <LogOut className="h-4 w-4" /> Sair
+            </button>
+          </form>
+        </div>
         <div className="px-3 pb-3 md:flex-1">
           <Nav />
         </div>

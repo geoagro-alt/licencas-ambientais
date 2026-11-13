@@ -7,7 +7,7 @@ import { Button, Card, Field, Input, Select, Textarea, cx } from "@/components/u
 import { createClient } from "@/lib/supabase/client";
 import { TIPOS_ACEITOS, type CondicionanteExtraida } from "@/lib/extracao-ia";
 import { TIPOS_LICENCA, UFS, type Membro } from "@/lib/types";
-import { analisarDocumento, salvarLeitura, type DadosRevisados, type OpcaoEmpresa } from "./actions";
+import { analisarDocumento, descartarArquivoLido, salvarLeitura, type DadosRevisados, type OpcaoEmpresa } from "./actions";
 
 type Etapa = "envio" | "lendo" | "revisao" | "salvando";
 
@@ -315,6 +315,8 @@ export function LeitorIA({ orgId, membros, iaAtiva, maxBytes }: { orgId: string;
         <Button
           variante="secundario"
           onClick={() => {
+            // desistiu deste documento: remove o arquivo temporário do Storage
+            if (dados) void descartarArquivoLido(dados.arquivo.storage_path);
             setDados(null);
             setEtapa("envio");
           }}

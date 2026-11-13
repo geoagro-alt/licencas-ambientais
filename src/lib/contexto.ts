@@ -22,15 +22,26 @@ export const getContexto = cache(async (): Promise<Contexto> => {
   if (!claims?.sub) redirect("/login");
   const user = { id: claims.sub, email: (claims.email as string | undefined) ?? "" };
 
-  const { data: membro } = await supabase
-    .from("membros")
-    .select("org_id, papel, organizacoes(nome)")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const buscarMembro = () =>
+    supabase
+      .from("membros")
+      .select("org_id, papel, organizacoes(nome)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-  if (!membro) redirect("/login?erro=sem-organizacao");
+  let { data: membro } = await buscarMembro();
+
+  if (!membro) {
+    // Sem organização: aceita convites pendentes para este e-mail (primeiro acesso de convidado,
+    // ou pessoa removida que foi convidada de novo).
+    const { data: aceitou } = await supabase.rpc("aceitar_convite");
+    if (aceitou) ({ data: membro } = await buscarMembro());
+  }
+
+  // Não redirecione para /login aqui: o proxy manda usuário logado de volta ao painel (laço infinito).
+  if (!membro) redirect("/sem-organizacao");
 
   const org = membro.organizacoes as unknown as { nome: string } | null;
   const papel = membro.papel as Papel;

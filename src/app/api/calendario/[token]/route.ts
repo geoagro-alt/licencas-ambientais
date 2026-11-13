@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buscarTudo } from "@/lib/paginacao";
 import { limiteRenovacao } from "@/lib/prazos";
 import { tituloLicenca, type LinhaLicenca } from "@/lib/alertas";
 
@@ -19,14 +20,18 @@ export async function GET(req: Request, ctx: RouteContext<"/api/calendario/[toke
 
   const sel =
     "id, tipo, numero, data_validade, antecedencia_renovacao_dias, situacao, protocolo_renovacao, responsavel_id, empreendimentos(nome, empresas(razao_social))";
-  const [{ data: licencas }, { data: conds }] = await Promise.all([
-    db.from("licencas").select(sel).eq("org_id", org.id).neq("situacao", "encerrada"),
-    db
-      .from("condicionantes")
-      .select(`id, licenca_id, numero, descricao, prazo, situacao, licencas(${sel})`)
-      .eq("org_id", org.id)
-      .in("situacao", ["pendente", "em_andamento"])
-      .not("prazo", "is", null),
+  const [licencas, conds] = await Promise.all([
+    buscarTudo((de, ate) => db.from("licencas").select(sel).eq("org_id", org.id).neq("situacao", "encerrada").order("id").range(de, ate)),
+    buscarTudo((de, ate) =>
+      db
+        .from("condicionantes")
+        .select(`id, licenca_id, numero, descricao, prazo, situacao, licencas(${sel})`)
+        .eq("org_id", org.id)
+        .in("situacao", ["pendente", "em_andamento"])
+        .not("prazo", "is", null)
+        .order("id")
+        .range(de, ate),
+    ),
   ]);
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin).replace(/\/$/, "");
@@ -54,7 +59,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/calendario/[toke
     );
   };
 
-  for (const l of (licencas ?? []) as unknown as LinhaLicenca[]) {
+  for (const l of licencas as unknown as LinhaLicenca[]) {
     if (!l.data_validade) continue;
     const t = tituloLicenca(l);
     evento(`val-${l.id}`, l.data_validade, `Vence: ${t}`, l.empreendimentos?.empresas?.razao_social ?? "", `${appUrl}/licencas/${l.id}`);
@@ -63,8 +68,9 @@ export async function GET(req: Request, ctx: RouteContext<"/api/calendario/[toke
       evento(`ren-${l.id}`, lim, `Protocolar renovação: ${t}`, "Prazo de antecedência para requerer a renovação", `${appUrl}/licencas/${l.id}`);
     }
   }
-  for (const c of (conds ?? []) as unknown as (LinhaLicenca & { licenca_id: string; numero: string | null; descricao: string; prazo: string; licencas: LinhaLicenca | null })[]) {
-    if (!c.prazo) continue;
+  for (const c of conds as unknown as (LinhaLicenca & { licenca_id: string; numero: string | null; descricao: string; prazo: string; licencas: LinhaLicenca | null })[]) {
+    // mesma regra dos alertas: condicionantes de licença encerrada não entram
+    if (!c.prazo || c.licencas?.situacao === "encerrada") continue;
     const t = c.licencas ? tituloLicenca(c.licencas) : "";
     evento(`cond-${c.id}-${c.prazo}`, c.prazo, `Condicionante ${c.numero ?? ""} — ${t}`.replace("  ", " "), c.descricao, `${appUrl}/licencas/${c.licenca_id}`);
   }

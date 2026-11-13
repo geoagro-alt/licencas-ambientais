@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { caminhosDeEmpreendimentos, caminhosDeEmpresa, removerArquivos } from "@/lib/arquivos";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,8 +44,12 @@ export async function salvarEmpresa(form: FormData) {
 
 export async function excluirEmpresa(form: FormData) {
   const supabase = await createClient();
-  const { error } = await supabase.from("empresas").delete().eq("id", String(form.get("id")));
+  const id = String(form.get("id"));
+  // o cascade apaga licenças e registros de documentos; os arquivos no Storage precisam sair à parte
+  const caminhos = await caminhosDeEmpresa(supabase, id);
+  const { error } = await supabase.from("empresas").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  await removerArquivos(supabase, caminhos);
   revalidatePath("/clientes");
   redirect("/clientes");
 }
@@ -75,7 +80,10 @@ export async function salvarEmpreendimento(form: FormData) {
 
 export async function excluirEmpreendimento(form: FormData) {
   const supabase = await createClient();
-  const { error } = await supabase.from("empreendimentos").delete().eq("id", String(form.get("id")));
+  const id = String(form.get("id"));
+  const caminhos = await caminhosDeEmpreendimentos(supabase, [id]);
+  const { error } = await supabase.from("empreendimentos").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  await removerArquivos(supabase, caminhos);
   revalidatePath(`/clientes/${String(form.get("empresa_id"))}`);
 }

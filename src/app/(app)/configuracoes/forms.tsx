@@ -74,7 +74,7 @@ export function FormSenha() {
   return (
     <form action={action} className="space-y-3">
       <Field label="Nova senha">
-        <Input name="senha" type="password" minLength={6} required autoComplete="new-password" />
+        <Input name="senha" type="password" minLength={8} required autoComplete="new-password" />
       </Field>
       <Msg e={estado} />
       <Button type="submit" variante="secundario" disabled={pend}>

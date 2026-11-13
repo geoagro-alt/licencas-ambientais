@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckCircle2, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { BotaoConfirmar } from "@/components/confirmar";
+import { BotaoEnviar } from "@/components/botao-enviar";
 import { Badge, Button, Card, Field, Input, LinkButton, PageHeader, Select, Tabela, Td, Textarea, Th, Vazio } from "@/components/ui";
 import { UploadDocumento } from "@/components/upload-documento";
 import { getContexto } from "@/lib/contexto";
@@ -344,6 +345,8 @@ function AcoesCondicionante({ c, membros }: { c: Condicionante; membros: { user_
           </summary>
           <form action={cumprirCondicionante} className="absolute right-0 z-10 mt-1 w-72 space-y-2 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-lg">
             <input type="hidden" name="id" value={c.id} />
+            {/* prazo que o usuário está vendo: o banco recusa se já tiver avançado (clique duplo / outra aba) */}
+            <input type="hidden" name="prazo_esperado" value={c.prazo ?? ""} />
             <Field label="Data">
               <Input type="date" name="data_cumprimento" defaultValue={hojeISO()} />
             </Field>
@@ -354,9 +357,9 @@ function AcoesCondicionante({ c, membros }: { c: Condicionante; membros: { user_
               <Input name="observacao" />
             </Field>
             {c.tipo === "periodica" && <p className="text-xs text-slate-500">O prazo avançará {c.periodicidade_meses} mês(es) automaticamente.</p>}
-            <Button type="submit" className="w-full">
+            <BotaoEnviar className="w-full" pendente="Registrando…">
               Confirmar
-            </Button>
+            </BotaoEnviar>
           </form>
         </details>
       )}

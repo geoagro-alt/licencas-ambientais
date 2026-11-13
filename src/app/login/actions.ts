@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { destinoSeguro, SENHA_MINIMA } from "@/lib/seguranca";
 import { createClient } from "@/lib/supabase/server";
 
 export type EstadoLogin = { erro?: string; ok?: string } | undefined;
@@ -12,22 +13,29 @@ export async function entrar(_: EstadoLogin, form: FormData): Promise<EstadoLogi
     password: String(form.get("senha")),
   });
   if (error) return { erro: error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message };
-  const next = String(form.get("next") || "/dashboard");
-  redirect(next.startsWith("/") ? next : "/dashboard");
+  redirect(destinoSeguro(String(form.get("next") || "")));
 }
 
 export async function cadastrar(_: EstadoLogin, form: FormData): Promise<EstadoLogin> {
+  const senha = String(form.get("senha") ?? "");
+  if (senha.length < SENHA_MINIMA) return { erro: `A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres.` };
   const supabase = await createClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const { data, error } = await supabase.auth.signUp({
     email: String(form.get("email")),
-    password: String(form.get("senha")),
+    password: senha,
     options: {
       emailRedirectTo: `${appUrl}/auth/callback`,
       data: { nome: String(form.get("nome") || ""), organizacao: String(form.get("organizacao") || "") },
     },
   });
-  if (error) return { erro: error.message };
+  if (error) {
+    // o gatilho handle_new_user recusa e-mails sem convite (ver supabase/migrations/0006)
+    if (/database error|convite/i.test(error.message)) {
+      return { erro: "O cadastro é apenas por convite. Peça ao administrador da sua organização para convidar este e-mail." };
+    }
+    return { erro: error.message };
+  }
   if (data.session) redirect("/dashboard");
   return { ok: "Conta criada! Confira seu e-mail para confirmar o cadastro e depois faça login." };
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { subMonths, format } from "date-fns";
 import { getContexto } from "@/lib/contexto";
 import { chaveNome, type LinhaImportada } from "@/lib/importacao";
+import { buscarTudo } from "@/lib/paginacao";
 import { hojeISO } from "@/lib/prazos";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,29 +40,29 @@ export async function importarLicencas(
     const org = ctx.orgId;
 
     // ---- empresas
-    const { data: empresasDb, error: e1 } = await supabase.from("empresas").select("id, razao_social").eq("org_id", org);
-    if (e1) throw e1;
-    const empresaPorChave = new Map((empresasDb ?? []).map((e) => [chaveNome(e.razao_social), e.id as string]));
+    // buscarTudo: a API corta em 1.000 linhas; sem paginar, reimportar duplicaria o que ficou de fora
+    const empresasDb = await buscarTudo((de, ate) => supabase.from("empresas").select("id, razao_social").eq("org_id", org).order("id").range(de, ate));
+    const empresaPorChave = new Map(empresasDb.map((e) => [chaveNome(e.razao_social), e.id as string]));
     const novasEmpresas = new Map<string, string>();
     for (const l of linhas) {
       const k = chaveNome(l.empresa);
       if (!empresaPorChave.has(k) && !novasEmpresas.has(k)) novasEmpresas.set(k, l.empresa);
     }
     if (novasEmpresas.size) {
-      const { data, error } = await supabase
-        .from("empresas")
-        .insert([...novasEmpresas.values()].map((razao_social) => ({ org_id: org, razao_social })))
-        .select("id, razao_social");
-      if (error) throw error;
-      for (const e of data ?? []) empresaPorChave.set(chaveNome(e.razao_social), e.id);
-      resumo.empresasCriadas = data?.length ?? 0;
+      const novas = [...novasEmpresas.values()].map((razao_social) => ({ org_id: org, razao_social }));
+      // em lotes: a resposta do insert também é limitada a 1.000 linhas
+      for (let i = 0; i < novas.length; i += 500) {
+        const { data, error } = await supabase.from("empresas").insert(novas.slice(i, i + 500)).select("id, razao_social");
+        if (error) throw error;
+        for (const e of data ?? []) empresaPorChave.set(chaveNome(e.razao_social), e.id);
+        resumo.empresasCriadas += data?.length ?? 0;
+      }
     }
 
     // ---- empreendimentos (únicos por empresa + nome)
-    const { data: empsDb, error: e2 } = await supabase.from("empreendimentos").select("id, empresa_id, nome").eq("org_id", org);
-    if (e2) throw e2;
+    const empsDb = await buscarTudo((de, ate) => supabase.from("empreendimentos").select("id, empresa_id, nome").eq("org_id", org).order("id").range(de, ate));
     const chaveEmp = (empresaId: string, nome: string) => `${empresaId}|${chaveNome(nome)}`;
-    const empPorChave = new Map((empsDb ?? []).map((e) => [chaveEmp(e.empresa_id, e.nome), e.id as string]));
+    const empPorChave = new Map(empsDb.map((e) => [chaveEmp(e.empresa_id, e.nome), e.id as string]));
     const novosEmps = new Map<string, { org_id: string; empresa_id: string; nome: string; municipio: string | null; uf: string | null }>();
     for (const l of linhas) {
       const empresaId = empresaPorChave.get(chaveNome(l.empresa))!;
@@ -71,22 +72,23 @@ export async function importarLicencas(
       }
     }
     if (novosEmps.size) {
-      const { data, error } = await supabase.from("empreendimentos").insert([...novosEmps.values()]).select("id, empresa_id, nome");
-      if (error) throw error;
-      for (const e of data ?? []) empPorChave.set(chaveEmp(e.empresa_id, e.nome), e.id);
-      resumo.empreendimentosCriados = data?.length ?? 0;
+      const novos = [...novosEmps.values()];
+      for (let i = 0; i < novos.length; i += 500) {
+        const { data, error } = await supabase.from("empreendimentos").insert(novos.slice(i, i + 500)).select("id, empresa_id, nome");
+        if (error) throw error;
+        for (const e of data ?? []) empPorChave.set(chaveEmp(e.empresa_id, e.nome), e.id);
+        resumo.empreendimentosCriados += data?.length ?? 0;
+      }
     }
 
     // ---- licenças
-    const { data: licsDb, error: e3 } = await supabase
-      .from("licencas")
-      .select("id, empreendimento_id, tipo, numero, codigo_externo")
-      .eq("org_id", org);
-    if (e3) throw e3;
+    const licsDb = await buscarTudo((de, ate) =>
+      supabase.from("licencas").select("id, empreendimento_id, tipo, numero, codigo_externo").eq("org_id", org).order("id").range(de, ate),
+    );
     const porCodigo = new Map<string, string>();
     const porIdentidade = new Map<string, string>();
     const identidade = (empId: string, tipo: string, numero: string | null) => `${empId}|${chaveNome(tipo)}|${chaveNome(numero ?? "")}`;
-    for (const l of licsDb ?? []) {
+    for (const l of licsDb) {
       if (l.codigo_externo) porCodigo.set(l.codigo_externo, l.id);
       if (l.numero) porIdentidade.set(identidade(l.empreendimento_id, l.tipo, l.numero), l.id);
     }

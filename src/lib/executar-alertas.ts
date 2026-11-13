@@ -11,6 +11,7 @@ import {
   type MembroAlerta,
 } from "./alertas";
 import { enviarEmail, montarEmailAlertas } from "./email";
+import { buscarTudo } from "./paginacao";
 import { hojeISO } from "./prazos";
 
 const SELECT_LICENCA =
@@ -28,7 +29,10 @@ export interface ResultadoOrg {
   orgNome: string;
   itens: number;
   emails: { para: string; itens: number; ok: boolean; erro?: string }[];
+  erroRegistro?: string;
 }
+
+type LinhaEnviado = { entidade: string; entidade_id: string; data_referencia: string; marco_dias: number };
 
 export async function executarAlertas(opts: Opcoes = {}): Promise<ResultadoOrg[]> {
   const db = createAdminClient();
@@ -46,25 +50,32 @@ export async function executarAlertas(opts: Opcoes = {}): Promise<ResultadoOrg[]
     const orgId = cfg.org_id as string;
     const orgNome = (cfg.organizacoes as unknown as { nome: string } | null)?.nome ?? "Organização";
 
-    const [{ data: licencas }, { data: conds }, { data: membros }, { data: enviados }] = await Promise.all([
-      db.from("licencas").select(SELECT_LICENCA).eq("org_id", orgId),
-      db
-        .from("condicionantes")
-        .select(`id, licenca_id, numero, descricao, prazo, situacao, responsavel_id, licencas(${SELECT_LICENCA})`)
-        .eq("org_id", orgId)
-        .in("situacao", ["pendente", "em_andamento"])
-        .not("prazo", "is", null),
+    // buscarTudo: sem paginação a API corta em 1.000 linhas e o histórico incompleto geraria avisos repetidos
+    const [licencas, conds, { data: membros }, enviados] = await Promise.all([
+      buscarTudo((de, ate) => db.from("licencas").select(SELECT_LICENCA).eq("org_id", orgId).neq("situacao", "encerrada").order("id").range(de, ate)),
+      buscarTudo((de, ate) =>
+        db
+          .from("condicionantes")
+          .select(`id, licenca_id, numero, descricao, prazo, situacao, responsavel_id, licencas(${SELECT_LICENCA})`)
+          .eq("org_id", orgId)
+          .in("situacao", ["pendente", "em_andamento"])
+          .not("prazo", "is", null)
+          .order("id")
+          .range(de, ate),
+      ),
       db.from("membros").select("user_id, email, papel, receber_alertas").eq("org_id", orgId),
       opts.ignorarHistorico
-        ? Promise.resolve({ data: [] as { entidade: string; entidade_id: string; data_referencia: string; marco_dias: number }[] })
-        : db.from("alertas_enviados").select("entidade, entidade_id, data_referencia, marco_dias").eq("org_id", orgId),
+        ? Promise.resolve([] as LinhaEnviado[])
+        : buscarTudo<LinhaEnviado>((de, ate) =>
+            db.from("alertas_enviados").select("entidade, entidade_id, data_referencia, marco_dias").eq("org_id", orgId).order("id").range(de, ate),
+          ),
     ]);
 
     const itens = [
-      ...itensDeLicencas((licencas ?? []) as unknown as LinhaLicenca[], hoje),
-      ...itensDeCondicionantes((conds ?? []) as unknown as LinhaCondicionante[]),
+      ...itensDeLicencas(licencas as unknown as LinhaLicenca[], hoje),
+      ...itensDeCondicionantes(conds as unknown as LinhaCondicionante[]),
     ];
-    const ja = new Set((enviados ?? []).map((e) => chaveAlerta(e.entidade, e.entidade_id, e.data_referencia, e.marco_dias)));
+    const ja = new Set(enviados.map((e) => chaveAlerta(e.entidade, e.entidade_id, e.data_referencia, e.marco_dias)));
     const selecionados = selecionarAlertas(itens, cfg.dias_antes as number[], ja, hoje);
 
     const resultado: ResultadoOrg = { orgId, orgNome, itens: selecionados.length, emails: [] };
@@ -83,7 +94,7 @@ export async function executarAlertas(opts: Opcoes = {}): Promise<ResultadoOrg[]
       }
       try {
         const { assunto, html, texto } = montarEmailAlertas(orgNome, lista);
-        await enviarEmail(para, assunto, html, texto);
+        await comNovaTentativa(() => enviarEmail(para, assunto, html, texto));
         resultado.emails.push({ para, itens: lista.length, ok: true });
         for (const i of lista) {
           const k = chaveAlerta(i.entidade, i.id, i.dataReferencia, i.marco);
@@ -105,12 +116,30 @@ export async function executarAlertas(opts: Opcoes = {}): Promise<ResultadoOrg[]
           marco_dias: i.marco,
           destinatarios: avisados.get(chaveAlerta(i.entidade, i.id, i.dataReferencia, i.marco)) ?? [],
         }));
-      await db.from("alertas_enviados").upsert(linhas, {
-        onConflict: "entidade,entidade_id,data_referencia,marco_dias",
-        ignoreDuplicates: true,
-      });
+      for (let i = 0; i < linhas.length; i += 500) {
+        const { error: eReg } = await db.from("alertas_enviados").upsert(linhas.slice(i, i + 500), {
+          onConflict: "entidade,entidade_id,data_referencia,marco_dias",
+          ignoreDuplicates: true,
+        });
+        // sem o registro o aviso seria repetido amanhã — deixa visível no resultado do cron
+        if (eReg) resultado.erroRegistro = eReg.message;
+      }
     }
   }
 
   return resultados;
+}
+
+/** Falhas de envio costumam ser passageiras (limite de taxa, rede): tenta de novo antes de desistir. */
+async function comNovaTentativa<T>(fn: () => Promise<T>, tentativas = 3): Promise<T> {
+  let ultimo: unknown;
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      ultimo = e;
+      if (i < tentativas - 1) await new Promise((ok) => setTimeout(ok, 800 * (i + 1)));
+    }
+  }
+  throw ultimo;
 }
