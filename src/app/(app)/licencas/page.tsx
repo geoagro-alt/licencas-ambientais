@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, FileSpreadsheet, Plus } from "lucide-react";
+import { Download, FileSpreadsheet, Plus, Sparkles } from "lucide-react";
 import { Badge, Button, Card, Input, LinkButton, PageHeader, Select, Tabela, Td, Th, Vazio } from "@/components/ui";
 import { getContexto } from "@/lib/contexto";
 import { listarLicencas, siglaTipo } from "@/lib/dados";
@@ -44,6 +44,11 @@ export default async function LicencasPage({ searchParams }: PageProps<"/licenca
               <Download className="h-4 w-4" /> Exportar CSV
             </LinkButton>
             {ctx.podeEditar && (
+              <LinkButton href="/licencas/ler" variante="secundario">
+                <Sparkles className="h-4 w-4" /> Ler documento com IA
+              </LinkButton>
+            )}
+            {ctx.podeEditar && (
               <LinkButton href="/licencas/importar" variante="secundario">
                 <FileSpreadsheet className="h-4 w-4" /> Importar planilha
               </LinkButton>
@@ -59,7 +64,7 @@ export default async function LicencasPage({ searchParams }: PageProps<"/licenca
 
       <Card>
         <form className="mb-4 flex flex-wrap gap-2">
-          <Input name="q" defaultValue={q} placeholder="Buscar por número, empresa, empreendimento, órgão…" className="max-w-sm" />
+          <Input name="q" defaultValue={q} placeholder="Buscar por número, cliente, empreendimento, órgão…" className="max-w-sm" />
           <Select name="status" defaultValue={filtro.v} className="max-w-56">
             {FILTROS.map((f) => (
               <option key={f.v} value={f.v}>
@@ -85,6 +90,10 @@ export default async function LicencasPage({ searchParams }: PageProps<"/licenca
                     ou{" "}
                     <Link href="/licencas/importar" className="text-emerald-700 hover:underline">
                       importar de uma planilha
+                    </Link>{" "}
+                    ou{" "}
+                    <Link href="/licencas/ler" className="text-emerald-700 hover:underline">
+                      ler o PDF com IA
                     </Link>
                   </>
                 )}

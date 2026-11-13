@@ -86,8 +86,8 @@ export function Importador() {
             diferenciar maiúsculas/acentos):
           </p>
           <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs">
-            <li><b>Empresa</b>: Empreendedor, Empresa, Razão social, Cliente, Titular</li>
-            <li><b>Empreendimento</b>: Empreendimento, Fazenda, Unidade, Imóvel (se vazio, usa o nome da empresa)</li>
+            <li><b>Cliente</b>: Empreendedor, Cliente, Empresa, Razão social, Titular</li>
+            <li><b>Empreendimento</b>: Empreendimento, Fazenda, Unidade, Imóvel (se vazio, usa o nome do cliente)</li>
             <li><b>Tipo</b>: Tipo da Licença, Tipo · <b>Número</b>: Número da Licença, Número · <b>Processo</b>: Número do processo</li>
             <li><b>Órgão</b>: Licenciador, Órgão · <b>Município</b>: Cidade · <b>UF</b></li>
             <li><b>Emissão</b> e <b>Vencimento/Validade</b> (dd/mm/aaaa) · <b>Renovação</b> (calcula a antecedência)</li>
@@ -105,7 +105,7 @@ export function Importador() {
               <div className="font-semibold">Importação concluída ✔</div>
               <ul className="mt-1 list-disc pl-5">
                 <li>{resumo.licencasCriadas} licença(s) nova(s) e {resumo.licencasAtualizadas} atualizada(s)</li>
-                <li>{resumo.empresasCriadas} empresa(s) e {resumo.empreendimentosCriados} empreendimento(s) cadastrados</li>
+                <li>{resumo.empresasCriadas} cliente(s) e {resumo.empreendimentosCriados} empreendimento(s) cadastrados</li>
                 {resumo.encerradas > 0 && <li>{resumo.encerradas} licença(s) antiga(s) marcada(s) como encerrada(s)</li>}
               </ul>
               <div className="mt-3 flex gap-3">
@@ -121,7 +121,7 @@ export function Importador() {
 
       {leitura && (
         <Card
-          titulo={`Prévia: ${linhas.length} licença(s) de ${empresas} empresa(s)`}
+          titulo={`Prévia: ${linhas.length} licença(s) de ${empresas} cliente(s)`}
           acoes={
             linhas.length > 0 && (
               <Button onClick={confirmar} disabled={pendente}>

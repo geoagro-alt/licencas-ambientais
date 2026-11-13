@@ -16,12 +16,12 @@ export default async function EmpresasPage() {
 
   return (
     <>
-      <PageHeader titulo="Empresas" subtitulo="Clientes / titulares e seus empreendimentos (fazendas, unidades, obras)" />
+      <PageHeader titulo="Clientes" subtitulo="Clientes (empreendedores/titulares) e seus empreendimentos — fazendas, unidades, obras" />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2" titulo={`${empresas?.length ?? 0} empresa(s)`}>
+        <Card className="lg:col-span-2" titulo={`${empresas?.length ?? 0} cliente(s)`}>
           {!empresas?.length ? (
-            <Vazio>Nenhuma empresa cadastrada ainda. Comece pelo formulário ao lado.</Vazio>
+            <Vazio>Nenhum cliente cadastrado ainda. Comece pelo formulário ao lado.</Vazio>
           ) : (
             <Tabela>
               <thead>
@@ -39,7 +39,7 @@ export default async function EmpresasPage() {
                   return (
                     <tr key={e.id} className="hover:bg-slate-50">
                       <Td>
-                        <Link href={`/empresas/${e.id}`} className="font-medium text-slate-900 hover:text-emerald-700">
+                        <Link href={`/clientes/${e.id}`} className="font-medium text-slate-900 hover:text-emerald-700">
                           {e.razao_social}
                         </Link>
                       </Td>
@@ -56,7 +56,7 @@ export default async function EmpresasPage() {
         </Card>
 
         {ctx.podeEditar && (
-          <Card titulo="Nova empresa">
+          <Card titulo="Novo cliente">
             <form action={salvarEmpresa} className="space-y-3">
               <Field label="Razão social / nome *">
                 <Input name="razao_social" required />

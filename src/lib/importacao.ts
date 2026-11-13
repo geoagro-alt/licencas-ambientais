@@ -193,7 +193,7 @@ export function interpretarPlanilha(matriz: Celula[][]): ResultadoLeitura {
   if (!mapa.has("empresa") && !mapa.has("empreendimento")) {
     return {
       linhas: [],
-      avisos: ['Não encontrei a coluna da empresa (ex.: "Empresa" ou "Empreendedor"). Confira o cabeçalho da planilha.'],
+      avisos: ['Não encontrei a coluna do cliente (ex.: "Cliente", "Empresa" ou "Empreendedor"). Confira o cabeçalho da planilha.'],
       colunasReconhecidas: reconhecidas,
       colunasIgnoradas: ignoradas,
     };

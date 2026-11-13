@@ -55,7 +55,7 @@ export default async function LicencaPage({ params }: PageProps<"/licencas/[id]"
           Licenças
         </Link>{" "}
         /{" "}
-        <Link href={`/empresas/${l.empreendimentos?.empresas?.id}`} className="hover:text-slate-800">
+        <Link href={`/clientes/${l.empreendimentos?.empresas?.id}`} className="hover:text-slate-800">
           {l.empreendimentos?.empresas?.razao_social}
         </Link>
       </div>

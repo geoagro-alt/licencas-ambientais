@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (tipo === "condicionantes") {
     const conds = await listarCondicionantes(ctx.orgId);
     linhas = [
-      ["Empresa", "Empreendimento", "Licença", "Nº licença", "Nº cond.", "Descrição", "Tipo", "Periodicidade (meses)", "Prazo", "Situação", "Status", "Responsável"],
+      ["Cliente", "Empreendimento", "Licença", "Nº licença", "Nº cond.", "Descrição", "Tipo", "Periodicidade (meses)", "Prazo", "Situação", "Status", "Responsável"],
       ...conds.map((c) => [
         c.licencas?.empreendimentos?.empresas?.razao_social,
         c.licencas?.empreendimentos?.nome,
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   } else {
     const lics = await listarLicencas(ctx.orgId);
     linhas = [
-      ["Empresa", "Empreendimento", "Município", "UF", "Tipo", "Número", "Órgão", "Processo", "Emissão", "Validade", "Protocolar renovação até", "Protocolo renovação", "Situação", "Status", "Responsável"],
+      ["Cliente", "Empreendimento", "Município", "UF", "Tipo", "Número", "Órgão", "Processo", "Emissão", "Validade", "Protocolar renovação até", "Protocolo renovação", "Situação", "Status", "Responsável"],
       ...lics.map((l) => [
         l.empreendimentos?.empresas?.razao_social,
         l.empreendimentos?.nome,

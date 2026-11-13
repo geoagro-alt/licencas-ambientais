@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UFS, type Empreendimento, type Empresa, type Licenca } from "@/lib/types";
 import { excluirEmpreendimento, excluirEmpresa, salvarEmpreendimento, salvarEmpresa } from "../actions";
 
-export default async function EmpresaPage({ params }: PageProps<"/empresas/[id]">) {
+export default async function EmpresaPage({ params }: PageProps<"/clientes/[id]">) {
   const { id } = await params;
   const ctx = await getContexto();
   const supabase = await createClient();
@@ -28,7 +28,7 @@ export default async function EmpresaPage({ params }: PageProps<"/empresas/[id]"
     <>
       <PageHeader
         titulo={empresa.razao_social}
-        subtitulo={[empresa.cnpj_cpf, empresa.contato_nome, empresa.contato_email, empresa.telefone].filter(Boolean).join(" · ") || "Empresa"}
+        subtitulo={[empresa.cnpj_cpf, empresa.contato_nome, empresa.contato_email, empresa.telefone].filter(Boolean).join(" · ") || "Cliente"}
         acoes={
           ctx.podeEditar && (
             <LinkButton href={`/licencas/nova?empresa=${id}`}>
@@ -153,7 +153,7 @@ export default async function EmpresaPage({ params }: PageProps<"/empresas/[id]"
               </form>
             </Card>
 
-            <Card titulo="Dados da empresa">
+            <Card titulo="Dados do cliente">
               <form action={salvarEmpresa} className="space-y-3">
                 <input type="hidden" name="id" value={id} />
                 <Field label="Razão social">
@@ -181,7 +181,7 @@ export default async function EmpresaPage({ params }: PageProps<"/empresas/[id]"
               <form action={excluirEmpresa} className="mt-3">
                 <input type="hidden" name="id" value={id} />
                 <Button type="submit" variante="perigo" className="w-full">
-                  Excluir empresa (e tudo vinculado)
+                  Excluir cliente (e tudo vinculado)
                 </Button>
               </form>
             </Card>

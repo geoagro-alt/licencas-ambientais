@@ -32,21 +32,21 @@ export async function salvarEmpresa(form: FormData) {
   if (id) {
     const { error } = await supabase.from("empresas").update(dados).eq("id", id);
     if (error) throw new Error(error.message);
-    revalidatePath(`/empresas/${id}`);
+    revalidatePath(`/clientes/${id}`);
   } else {
     const { data, error } = await supabase.from("empresas").insert(dados).select("id").single();
     if (error) throw new Error(error.message);
-    redirect(`/empresas/${data.id}`);
+    redirect(`/clientes/${data.id}`);
   }
-  revalidatePath("/empresas");
+  revalidatePath("/clientes");
 }
 
 export async function excluirEmpresa(form: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("empresas").delete().eq("id", String(form.get("id")));
   if (error) throw new Error(error.message);
-  revalidatePath("/empresas");
-  redirect("/empresas");
+  revalidatePath("/clientes");
+  redirect("/clientes");
 }
 
 export async function salvarEmpreendimento(form: FormData) {
@@ -70,12 +70,12 @@ export async function salvarEmpreendimento(form: FormData) {
     ? await supabase.from("empreendimentos").update(dados).eq("id", id)
     : await supabase.from("empreendimentos").insert(dados);
   if (error) throw new Error(error.message);
-  revalidatePath(`/empresas/${empresaId}`);
+  revalidatePath(`/clientes/${empresaId}`);
 }
 
 export async function excluirEmpreendimento(form: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("empreendimentos").delete().eq("id", String(form.get("id")));
   if (error) throw new Error(error.message);
-  revalidatePath(`/empresas/${String(form.get("empresa_id"))}`);
+  revalidatePath(`/clientes/${String(form.get("empresa_id"))}`);
 }

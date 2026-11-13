@@ -13,6 +13,8 @@ Usuários: consultoria ambiental brasileira (GeoAgro) e seus clientes do agro. *
 - **Região**: funções da Vercel em `gru1` (São Paulo, `vercel.json`) — mesma região do Supabase (`sa-east-1`). Não remova: com o servidor nos EUA cada clique fica ~0,5 s mais lento.
 - Autenticação no servidor usa `supabase.auth.getClaims()` (valida o JWT sem ida extra ao Auth). `loading.tsx` em `(app)` dá resposta imediata ao navegar.
 - **Vitest** para testes (`npm test`).
+- **IA**: `@anthropic-ai/sdk` (Claude) lê PDF/foto de licenças em `/licencas/ler`. Arquivo vai do navegador para o Storage (`<org>/ia/...`), o servidor baixa e envia em base64 com `tool_choice` forçado; resposta normalizada por `normalizarExtracao` (testada). Sem `ANTHROPIC_API_KEY` a tela mostra aviso.
+- Na interface, a tabela `empresas` aparece como **Clientes** (rota `/clientes`; `/empresas` redireciona).
 
 ## Modelo de dados (supabase/migrations/0001_schema.sql)
 ```
@@ -47,7 +49,7 @@ npm run typecheck && npm run lint && npm test && npm run build
 ## Roadmap
 Itens priorizados para implementar (peça ao Claude Code: "implemente o item N do roadmap"):
 
-1. **Extração de condicionantes do PDF com IA** — ao anexar o PDF da licença, chamar a API da Anthropic (`@anthropic-ai/sdk`, modelo Claude com entrada de PDF) para extrair nº, órgão, validade e a lista de condicionantes com prazos sugeridos; mostrar tela de revisão antes de salvar. Variável `ANTHROPIC_API_KEY`.
+1. **Extrair condicionantes por IA numa licença já cadastrada** — a leitura de licença nova já existe em `/licencas/ler` (`src/lib/ia.ts` + `src/lib/extracao-ia.ts`, ferramenta `registrar_licenca`, modelo em `ANTHROPIC_MODEL`); falta um botão na página da licença para ler um PDF anexado e acrescentar só as condicionantes.
 2. **Alertas por WhatsApp** — via WhatsApp Business Cloud API (Meta) ou Z-API/Twilio; campo `telefone` em `membros`; template aprovado com resumo diário.
 3. **Relatório PDF** por empresa/empreendimento (licenças + condicionantes + histórico), para enviar ao cliente/auditoria.
 4. **Evidências de campo com foto + GPS** — upload pelo celular (PWA) com coordenadas EXIF/geolocalização vinculadas à condicionante.

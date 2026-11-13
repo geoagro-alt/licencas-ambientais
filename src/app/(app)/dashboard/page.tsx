@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarClock, ClipboardCheck, FileBadge, Plus } from "lucide-react";
+import { AlertTriangle, CalendarClock, ClipboardCheck, FileBadge, Plus, Sparkles } from "lucide-react";
 import { Badge, Card, LinkButton, PageHeader, Vazio } from "@/components/ui";
 import { getContexto } from "@/lib/contexto";
 import { listarCondicionantes, listarLicencas } from "@/lib/dados";
@@ -37,9 +37,14 @@ export default async function DashboardPage() {
         subtitulo={`Situação de hoje · ${ctx.orgNome}`}
         acoes={
           ctx.podeEditar && (
-            <LinkButton href="/licencas/nova">
-              <Plus className="h-4 w-4" /> Nova licença
-            </LinkButton>
+            <>
+              <LinkButton href="/licencas/ler" variante="secundario">
+                <Sparkles className="h-4 w-4" /> Ler documento com IA
+              </LinkButton>
+              <LinkButton href="/licencas/nova">
+                <Plus className="h-4 w-4" /> Nova licença
+              </LinkButton>
+            </>
           )
         }
       />
@@ -80,7 +85,7 @@ export default async function DashboardPage() {
             </div>
             <p className="mt-3 text-xs text-slate-500">Licenças e condicionantes em aberto que não estão vencidas/atrasadas.</p>
           </Card>
-          <Card titulo="Por empresa">
+          <Card titulo="Por cliente">
             <PorEmpresa licencas={stL} />
           </Card>
         </div>
@@ -158,7 +163,7 @@ function PorEmpresa({ licencas }: { licencas: { l: { empreendimentos: { empresas
     <ul className="space-y-2 text-sm">
       {lista.slice(0, 12).map((e) => (
         <li key={e.id} className="flex items-center justify-between gap-2">
-          <Link href={`/empresas/${e.id}`} className="truncate hover:text-emerald-700">
+          <Link href={`/clientes/${e.id}`} className="truncate hover:text-emerald-700">
             {e.nome}
           </Link>
           <span className="shrink-0 text-xs text-slate-500">

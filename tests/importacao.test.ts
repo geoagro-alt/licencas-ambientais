@@ -67,7 +67,7 @@ describe("interpretarPlanilha — CSV deste sistema", () => {
     const r = interpretarPlanilha(m);
     expect(r.linhas[0]).toMatchObject({ empresa: "Agro X", empreendimento: "Faz; Boa", municipio: "Sorriso", uf: "MT", tipo: "LO – Licença de Operação", data_validade: "2028-01-01", antecedencia_renovacao_dias: 120 });
   });
-  it("sem coluna de empresa", () => {
-    expect(interpretarPlanilha([["Foo", "Bar"], ["1", "2"]]).avisos[0]).toContain("empresa");
+  it("sem coluna de cliente", () => {
+    expect(interpretarPlanilha([["Foo", "Bar"], ["1", "2"]]).avisos[0]).toContain("cliente");
   });
 });

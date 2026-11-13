@@ -15,9 +15,9 @@ export function FormLicenca({ licenca, empreendimentos, membros, empreendimentoP
     return (
       <Card>
         <p className="text-sm text-slate-600">
-          Antes de cadastrar uma licença, cadastre a empresa e o empreendimento em{" "}
-          <Link href="/empresas" className="font-medium text-emerald-700 hover:underline">
-            Empresas
+          Antes de cadastrar uma licença, cadastre o cliente e o empreendimento em{" "}
+          <Link href="/clientes" className="font-medium text-emerald-700 hover:underline">
+            Clientes
           </Link>
           .
         </p>
@@ -28,7 +28,7 @@ export function FormLicenca({ licenca, empreendimentos, membros, empreendimentoP
   // agrupa empreendimentos por empresa
   const grupos = new Map<string, typeof empreendimentos>();
   for (const e of empreendimentos) {
-    const k = e.empresas?.razao_social ?? "Sem empresa";
+    const k = e.empresas?.razao_social ?? "Sem cliente";
     grupos.set(k, [...(grupos.get(k) ?? []), e]);
   }
   const tipoAtual = licenca?.tipo;

@@ -17,7 +17,7 @@ export default async function ImportarPage() {
       </div>
       <PageHeader
         titulo="Importar planilha"
-        subtitulo="Traga as licenças que você já controla em Excel ou em outro sistema. Empresas e empreendimentos são criados automaticamente."
+        subtitulo="Traga as licenças que você já controla em Excel ou em outro sistema. Clientes e empreendimentos são cadastrados automaticamente."
       />
       <Importador />
     </>

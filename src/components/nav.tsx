@@ -10,7 +10,7 @@ const ITENS = [
   { href: "/licencas", label: "Licenças", icon: FileBadge },
   { href: "/condicionantes", label: "Condicionantes", icon: ClipboardCheck },
   { href: "/calendario", label: "Calendário", icon: CalendarDays },
-  { href: "/empresas", label: "Empresas", icon: Building2 },
+  { href: "/clientes", label: "Clientes", icon: Building2 },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
