@@ -10,6 +10,8 @@ Usuários: consultoria ambiental brasileira (GeoAgro) e seus clientes do agro. *
 - **Supabase**: Postgres + Auth (e-mail/senha) + Storage (bucket privado `documentos`). Cliente SSR via `@supabase/ssr`.
 - **Tailwind CSS v4** (via `@tailwindcss/turbopack`, configurado em `next.config.ts` — não remova). Componentes visuais simples em `src/components/ui.tsx` (sem shadcn).
 - **Resend** para e-mail. **Vercel Cron** (`vercel.json`) chama `/api/cron/alertas` 1×/dia.
+- **Região**: funções da Vercel em `gru1` (São Paulo, `vercel.json`) — mesma região do Supabase (`sa-east-1`). Não remova: com o servidor nos EUA cada clique fica ~0,5 s mais lento.
+- Autenticação no servidor usa `supabase.auth.getClaims()` (valida o JWT sem ida extra ao Auth). `loading.tsx` em `(app)` dá resposta imediata ao navegar.
 - **Vitest** para testes (`npm test`).
 
 ## Modelo de dados (supabase/migrations/0001_schema.sql)

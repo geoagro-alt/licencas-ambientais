@@ -16,10 +16,11 @@ export interface Contexto {
 /** Usuário logado + organização ativa. Redireciona para /login se não houver sessão. */
 export const getContexto = cache(async (): Promise<Contexto> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // getClaims valida o JWT sem ida extra ao servidor de Auth (o proxy já renovou a sessão)
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) redirect("/login");
+  const user = { id: claims.sub, email: (claims.email as string | undefined) ?? "" };
 
   const { data: membro } = await supabase
     .from("membros")

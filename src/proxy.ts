@@ -24,10 +24,10 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Renova a sessão e descobre o usuário. Não coloque código entre createServerClient e getUser.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Renova a sessão e valida o JWT (localmente, sem ida ao servidor de Auth quando possível).
+  // Não coloque código entre createServerClient e getClaims.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
 
   const { pathname } = request.nextUrl;
   const publica = ROTAS_PUBLICAS.some((r) => pathname.startsWith(r));
